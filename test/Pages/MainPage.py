@@ -1,7 +1,6 @@
 from selenium.webdriver.common.by import By
 import requests
 
-from pytest_ui_api_template.conftest import driver
 
 
 class MainPage:
@@ -20,10 +19,6 @@ class MainPage:
         }
         resp = requests.post(self._driver + '/eats/v1/full-text-search/v1/search', headers=my_headers)
         return resp
-
-
-
-
 
 
 

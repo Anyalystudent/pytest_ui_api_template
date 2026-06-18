@@ -4,10 +4,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def driver():
-    browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-    browser.implicitly_wait(4)
+    browser = webdriver.Chrome()
     browser.maximize_window()
     yield browser
 

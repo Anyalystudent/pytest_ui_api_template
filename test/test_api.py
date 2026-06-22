@@ -1,11 +1,14 @@
 import requests
 import pytest
 import allure
-from cookies import COOKIES
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 URL = "https://market-delivery.yandex.ru"
 my_headers = {
-    "Cookie": COOKIES,
+    "Cookie": os.getenv('COOKIES'),
     "Cache-Control": "no-cache",
     "x-platform": "dc_desktop_web",
     "Content-Type": "application/json",
@@ -56,20 +59,28 @@ def test_add_and_delete_product():
         "place_business": "shop",
         "item_id": "5ceac0d8-9085-4b2e-a531-ca437749dcc1",
     }
-    result = requests.post(
-        url=f"{URL}/api/v1/cart", params=my_params, headers=my_headers, json=body
-    )
-    with allure.step("Проверить статус-код ответа = 200"):
-        assert result.status_code == 200
-    with allure.step("Взять из тела ответа значение ключа id, и записать в переменную"):
-        response_body = result.json()
-        id = response_body["id"]
-    with allure.step(f"Удалить добавленный в корзину товар со значением {id}"):
-        delete_result = requests.delete(
-            url=f"{URL}/api/v1/cart/{id}", params=my_params, headers=my_headers
+    item_id = None
+    try:
+        result = requests.post(
+            url=f"{URL}/api/v1/cart", params=my_params, headers=my_headers, json=body
         )
-    with allure.step("Проверить статус-код ответа = 200"):
-        assert delete_result.status_code == 200
+        with allure.step("Проверить статус-код ответа = 200"):
+            assert result.status_code == 200
+        with allure.step("Взять из тела ответа значение ключа id, и записать в переменную"):
+            response_body = result.json()
+            id = response_body["id"]
+        with allure.step(f"Удалить добавленный в корзину товар со значением {id}"):
+            delete_result = requests.delete(
+                url=f"{URL}/api/v1/cart/{id}", params=my_params, headers=my_headers
+            )
+        with allure.step("Проверить статус-код ответа = 200"):
+            assert delete_result.status_code == 200
+    finally:
+        if item_id:
+            with allure.step(f"Удалить добавленный в корзину товар со значением {item_id}"):
+                requests.delete(
+                    url=f"{URL}/api/v1/cart/{item_id}", params=my_params, headers=my_headers
+                )
 
 
 @allure.story("Изменение количества товара")
@@ -85,37 +96,44 @@ def test_add_and_edite_product():
         "place_business": "shop",
         "item_id": "5ceac0d8-9085-4b2e-a531-ca437749dcc1",
     }
-    result = requests.post(
-        url=f"{URL}/api/v1/cart", params=my_params, headers=my_headers, json=body
-    )
-    with allure.step("Проверить статус-код ответа = 200"):
-        assert result.status_code == 200
-    with allure.step("Взять из тела ответа значение ключа id, и записать в переменную"):
-        response_body = result.json()
-        id = response_body["id"]
-
-    edite_body = {"quantity": 2, "item_options": []}
-    with allure.step("Изменить количество товара"):
-        edite_result = requests.put(
-            url=f"{URL}/api/v1/cart/{id}",
-            params=my_params,
-            headers=my_headers,
-            json=edite_body,
+    item_id = None
+    try:
+        result = requests.post(
+            url=f"{URL}/api/v1/cart", params=my_params, headers=my_headers, json=body
         )
-    with allure.step("Проверить статус-код ответа = 200"):
-        assert edite_result.status_code == 200
-    with allure.step("Проверить, что количество изменилось и равно 2"):
-        assert edite_result.json()["cart"]["items"][0]["quantity"] == 2
-    with allure.step("Проверить, что id товара не поменялся"):
-        assert edite_result.json()["cart"]["items"][0]["id"] == id
+        with allure.step("Проверить статус-код ответа = 200"):
+            assert result.status_code == 200
+        with allure.step("Взять из тела ответа значение ключа id, и записать в переменную"):
+            response_body = result.json()
+            id = response_body["id"]
 
-    # удаляем добавленный в корзину товар
-    with allure.step(f"Удалить добавленный в корзину товар со значением {id}"):
-        delete_result = requests.delete(
-            url=f"{URL}/api/v1/cart/{id}", params=my_params, headers=my_headers
-        )
-    with allure.step("Проверить статус-код ответа = 200"):
-        assert delete_result.status_code == 200
+        edite_body = {"quantity": 2, "item_options": []}
+        with allure.step("Изменить количество товара"):
+            edite_result = requests.put(
+                url=f"{URL}/api/v1/cart/{id}",
+                params=my_params,
+                headers=my_headers,
+                json=edite_body,
+            )
+        with allure.step("Проверить статус-код ответа = 200"):
+            assert edite_result.status_code == 200
+        with allure.step("Проверить, что количество изменилось и равно 2"):
+            assert edite_result.json()["cart"]["items"][0]["quantity"] == 2
+        with allure.step("Проверить, что id товара не поменялся"):
+            assert edite_result.json()["cart"]["items"][0]["id"] == id
+
+        with allure.step(f"Удалить добавленный в корзину товар со значением {id}"):
+            delete_result = requests.delete(
+                url=f"{URL}/api/v1/cart/{id}", params=my_params, headers=my_headers
+            )
+        with allure.step("Проверить статус-код ответа = 200"):
+            assert delete_result.status_code == 200
+    finally:
+        if item_id:
+            with allure.step(f"Удалить добавленный в корзину товар со значением {item_id}"):
+                requests.delete(
+                    url=f"{URL}/api/v1/cart/{item_id}", params=my_params, headers=my_headers
+                )
 
 
 @allure.story("Поиск товара")
@@ -161,6 +179,5 @@ def test_add_product_negative():
     response_body = result.json()
     with allure.step("Проверить значение 'code' в ответе"):
         assert response_body["code"] == "get_head_cannot_have_body"
-    # проверка текста сообщения
     with allure.step("Проверить значение 'message' в ответе"):
         assert response_body["message"] == "Request cannot have content"

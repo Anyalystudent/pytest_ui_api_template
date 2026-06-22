@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-cookies.py
+.env
 __pycache__/
 *.py[codz]
 *$py.class
